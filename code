@@ -1,0 +1,69 @@
+# AI Drug Discovery Dashboard (Full Version with AI Model)
+# Built using Streamlit, RDKit, and scikit-learn
+
+import streamlit as st
+from rdkit import Chem
+from rdkit.Chem import Descriptors
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+
+# --- Function to generate features from SMILES ---
+def smiles_to_features(smiles):
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return None
+        features = [
+            Descriptors.MolWt(mol),
+            Descriptors.MolLogP(mol),
+            Descriptors.NumHDonors(mol),
+            Descriptors.NumHAcceptors(mol),
+        ]
+        return features
+    except:
+        return None
+
+# --- Simulated Model (trained on dummy data) ---
+def train_dummy_model():
+    # Dummy dataset
+    X = np.random.rand(100, 4)
+    y = 5 + 2 * X[:, 0] - 1.5 * X[:, 1] + 0.5 * X[:, 2] + np.random.randn(100) * 0.5
+    model = LinearRegression().fit(X, y)
+    return model
+
+model = train_dummy_model()
+
+# --- Streamlit UI ---
+st.set_page_config(page_title="AI Drug Discovery Dashboard", layout="centered")
+st.title("💊 AI Drug Discovery Dashboard")
+st.markdown("""
+Predict the **binding affinity** of a molecule using its SMILES string.
+This tool uses molecular descriptors and a trained AI model to simulate prediction.
+""")
+
+smiles = st.text_input("🔬 Enter SMILES string")
+
+if st.button("Predict Binding Affinity"):
+    features = smiles_to_features(smiles)
+    if features:
+        prediction = model.predict([features])[0]
+        st.success(f"Predicted Binding Affinity: **{prediction:.2f}**")
+
+        # Show molecular descriptors
+        desc_names = ["Molecular Weight", "LogP", "# H-Donors", "# H-Acceptors"]
+        desc_df = pd.DataFrame([features], columns=desc_names)
+        st.markdown("### Molecular Descriptors")
+        st.dataframe(desc_df)
+
+        # Allow download
+        csv = desc_df.copy()
+        csv["Predicted Affinity"] = prediction
+        csv_download = csv.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Download Result as CSV", csv_download, "prediction.csv", "text/csv")
+    else:
+        st.error("Invalid SMILES string. Please try again.")
+
+# Footer
+st.markdown("---")
+st.caption("Built with ❤️ by Shaik Mehveez Taheniyath | Powered by RDKit + Streamlit")
